@@ -1,4 +1,4 @@
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
-"""A collection of regression examples using `Estimators`."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+"""Models package definition."""
+from official.nlp.modeling.models.bert_classifier import BertClassifier
+from official.nlp.modeling.models.bert_pretrainer import BertPretrainer
+from official.nlp.modeling.models.bert_span_labeler import BertSpanLabeler

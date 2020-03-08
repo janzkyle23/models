@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import gin
 import tensorflow as tf
 import tensorflow_hub as hub
 
@@ -25,10 +26,8 @@ from official.modeling import tf_utils
 from official.nlp.albert import configs as albert_configs
 from official.nlp.bert import configs
 from official.nlp.modeling import losses
+from official.nlp.modeling import models
 from official.nlp.modeling import networks
-from official.nlp.modeling.networks import bert_classifier
-from official.nlp.modeling.networks import bert_pretrainer
-from official.nlp.modeling.networks import bert_span_labeler
 
 
 class BertPretrainLossAndMetricLayer(tf.keras.layers.Layer):
@@ -87,16 +86,46 @@ class BertPretrainLossAndMetricLayer(tf.keras.layers.Layer):
     return final_loss
 
 
-def get_transformer_encoder(bert_config, sequence_length):
+@gin.configurable
+def get_transformer_encoder(bert_config,
+                            sequence_length,
+                            transformer_encoder_cls=None):
   """Gets a 'TransformerEncoder' object.
 
   Args:
     bert_config: A 'modeling.BertConfig' or 'modeling.AlbertConfig' object.
     sequence_length: Maximum sequence length of the training data.
+    transformer_encoder_cls: A EncoderScaffold class. If it is None, uses the
+      default BERT encoder implementation.
 
   Returns:
     A networks.TransformerEncoder object.
   """
+  if transformer_encoder_cls is not None:
+    # TODO(hongkuny): evaluate if it is better to put cfg definition in gin.
+    embedding_cfg = dict(
+        vocab_size=bert_config.vocab_size,
+        type_vocab_size=bert_config.type_vocab_size,
+        hidden_size=bert_config.hidden_size,
+        seq_length=sequence_length,
+        max_seq_length=bert_config.max_position_embeddings,
+        initializer=tf.keras.initializers.TruncatedNormal(
+            stddev=bert_config.initializer_range),
+        dropout_rate=bert_config.hidden_dropout_prob,
+    )
+    hidden_cfg = dict(
+        num_attention_heads=bert_config.num_attention_heads,
+        intermediate_size=bert_config.intermediate_size,
+        intermediate_activation=tf_utils.get_activation(bert_config.hidden_act),
+        dropout_rate=bert_config.hidden_dropout_prob,
+        attention_dropout_rate=bert_config.attention_probs_dropout_prob,
+    )
+    kwargs = dict(embedding_cfg=embedding_cfg, hidden_cfg=hidden_cfg,
+                  num_hidden_instances=bert_config.num_hidden_layers,)
+
+    # Relies on gin configuration to define the Transformer encoder arguments.
+    return transformer_encoder_cls(**kwargs)
+
   kwargs = dict(
       vocab_size=bert_config.vocab_size,
       hidden_size=bert_config.hidden_size,
@@ -159,7 +188,7 @@ def pretrain_model(bert_config,
   if initializer is None:
     initializer = tf.keras.initializers.TruncatedNormal(
         stddev=bert_config.initializer_range)
-  pretrainer_model = bert_pretrainer.BertPretrainer(
+  pretrainer_model = models.BertPretrainer(
       network=transformer_encoder,
       num_classes=2,  # The next sentence prediction label has two classes.
       num_token_predictions=max_predictions_per_seq,
@@ -211,7 +240,7 @@ def squad_model(bert_config,
         stddev=bert_config.initializer_range)
   if not hub_module_url:
     bert_encoder = get_transformer_encoder(bert_config, max_seq_length)
-    return bert_span_labeler.BertSpanLabeler(
+    return models.BertSpanLabeler(
         network=bert_encoder, initializer=initializer), bert_encoder
 
   input_word_ids = tf.keras.layers.Input(
@@ -231,7 +260,7 @@ def squad_model(bert_config,
       },
       outputs=[sequence_output, pooled_output],
       name='core_model')
-  return bert_span_labeler.BertSpanLabeler(
+  return models.BertSpanLabeler(
       network=bert_encoder, initializer=initializer), bert_encoder
 
 
@@ -268,7 +297,7 @@ def classifier_model(bert_config,
 
   if not hub_module_url:
     bert_encoder = get_transformer_encoder(bert_config, max_seq_length)
-    return bert_classifier.BertClassifier(
+    return models.BertClassifier(
         bert_encoder,
         num_classes=num_labels,
         dropout_rate=bert_config.hidden_dropout_prob,
