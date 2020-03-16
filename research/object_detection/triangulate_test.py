@@ -5,17 +5,17 @@ import triangulate
 # xrp = 394
 # yrp = 392
 
-camera_distance = 0.4826
+camera_distance = 0.1
 actual_distance = 1
 
 pixel_width = 640
 pixel_height = 480
-angle_width = 66
+angle_width = 62.2
 
 angle_height = None
 
-pixel_left = [(423, 240), (380, 240), (392, 308), (353, 226), (345, 234), (346, 234), (329, 227), (431, 232)]
-pixel_right = [(180, 239), (216, 240), (244, 310), (233, 236), (242, 234), (272, 238), (270, 240), (378, 232)]
+pixel_left = [(252, 286), (381, 279), (140, 291)]
+pixel_right = [(385, 266), (509, 256), (274, 264)]
 
 angler = triangulate.Frame_Angles(pixel_width,pixel_height,angle_width,angle_height)
 angler.build_frame()
@@ -28,7 +28,7 @@ def distance_calculation(xlp, ylp, xrp, yrp):
 
 
 # triangulate
-for i in range(0,8):
+for i in range(len(pixel_left)):
     D = distance_calculation(pixel_left[i][0],pixel_left[i][1], pixel_right[i][0], pixel_right[i][1])
     print("{}".format(D))
 # print("{}, {}".format(D,Y))

@@ -92,7 +92,7 @@ def run_inference_for_single_image(model, image, filter_person=True):
   num_detections = int(output_dict.pop('num_detections'))
   # output_dict = {key:value[0, :num_detections].numpy() 
   #                for key,value in output_dict.items()}
-  indices = np.where(output_dict['detection_classes'][0, :num_detections].numpy() == 27)
+  indices = np.where(output_dict['detection_classes'][0, :num_detections].numpy() == 1)
 
   for key,value in output_dict.items():
     value_np = value[0, :num_detections].numpy()
@@ -216,19 +216,22 @@ def getMiddleCoordinates(image, output_dict, width, height, min_score_thresh=.5,
   
 
 # distance calculation parameters initialization
+width = 640
+height = 480
 angle_width=62.2
-angler = triangulate.Frame_Angles(angle_width)
+angler = triangulate.Frame_Angles(width,height,angle_width)
 angler.build_frame()
+camera_distance = 0.15
 
 # calculate distance from phone to detected object
-def distance_calculation(left_coordinate, right_coordinate, camera_distance = 0.075):
+def distance_calculation(left_coordinate, right_coordinate):
   (xlp, ylp) = left_coordinate
   (xrp, yrp) = right_coordinate
   xlangle,ylangle = angler.angles_from_center(xlp,ylp,top_left=True,degrees=True)
   xrangle,yrangle = angler.angles_from_center(xrp,yrp,top_left=True,degrees=True)
   X,Y,Z,D = angler.location(camera_distance,(xlangle,ylangle),(xrangle,yrangle),center=True,degrees=True)
 
-  return X,Y,Z,D
+  return D
 
 def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
   # elapsed time is in ms
@@ -240,8 +243,10 @@ def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
 
 
 # ip_left = 0  # Use this only if you have one webcam for testing
-ip_left = "http://192.168.0.108:8080/?action=stream"
-ip_right = "http://192.168.0.111:8080/?action=stream"
+# ip_left = "http://192.168.0.112/?action=stream"
+# ip_right = "http://192.168.0.111/?action=stream"
+ip_left = "http://192.168.43.190/?action=stream"
+ip_right = "http://192.168.43.22/?action=stream"
 cap_left = VideoCapture(ip_left)
 cap_right = VideoCapture(ip_right)
 # cap_right = cap_left
@@ -249,8 +254,6 @@ cap_right = VideoCapture(ip_right)
 # Models can be found here: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
 model_name = 'ssdlite_mobilenet_v2_coco_2018_05_09'
 detection_model = load_model(model_name)
-width = 640
-height = 480
 avg_delay = 0
 acc = 0
 
@@ -265,21 +268,15 @@ while True:
     image_np_left = cv2.resize(image_np_left, (width, height))
     displayTimeDelay(image_np_left, start_time)
     coords_left = getMiddleCoordinates(image_np_left, output_dict_left, width, height)
-    # print(coords_left)
 
     image_np_right, output_dict_right = show_inference(detection_model, np.array(image_np_right))
     image_np_right = cv2.resize(image_np_right, (width, height))
     displayTimeDelay(image_np_right, start_time)
     coords_right = getMiddleCoordinates(image_np_right, output_dict_right, width, height)
-    # print(coords_right)
 
     if coords_left and coords_right:
       distance = distance_calculation(coords_left[0], coords_right[0])
-      (x,y,z,d) = distance
-      print(f"x: {x}")
-      print(f"y: {y}")
-      print(f"z: {z}")
-      print(f"d: {d}")
+      print(f"distance: {distance}")
 
     # Display output
     results = np.concatenate((image_np_left, image_np_right), axis=1)
