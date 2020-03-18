@@ -28,7 +28,6 @@ import decision_making
 
 # patch tf1 into `utils.ops`
 utils_ops.tf = tf.compat.v1
-
 # Patch the location of gfile
 tf.gfile = tf.io.gfile
 
@@ -43,19 +42,6 @@ if gpus:
   except RuntimeError as e:
     # Memory growth must be set before GPUs have been initialized
     print(e)
-
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# if gpus:
-#   # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
-#   try:
-#     tf.config.experimental.set_virtual_device_configuration(
-#         gpus[0],
-#         [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
-#     logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-#     print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-#   except RuntimeError as e:
-#     # Virtual devices must be set before GPUs have been initialized
-#     print(e)
 
 
 def load_model(model_name):
@@ -219,10 +205,12 @@ def getMiddleCoordinates(image, output_dict, width, height, min_score_thresh=.5,
 # distance calculation parameters initialization
 width = 640
 height = 480
-angle_width=62.2
+# angle_width=62.2 # rpi cam
+angle_width=66 # kyle
 angler = triangulate.Frame_Angles(width,height,angle_width)
 angler.build_frame()
-camera_distance = 0.15
+# camera_distance = 0.15 # rpi cam
+camera_distance = 0.16 #kyle
 
 # calculate distance from phone to detected object
 def distance_calculation(left_coordinate, right_coordinate):
@@ -236,7 +224,7 @@ def distance_calculation(left_coordinate, right_coordinate):
 
 # initializing rc car control
 transmission_delay=0.02
-stop_dist=1
+stop_dist=0.5
 max_speed=0.83
 frames_to_skip=0
 waiting_time=1
@@ -257,10 +245,10 @@ def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
 
 
 # ip_left = 0  # Use this only if you have one webcam for testing
-# ip_left = "http://192.168.0.112/?action=stream"
-# ip_right = "http://192.168.0.111/?action=stream"
-ip_left = "http://192.168.43.190/?action=stream"
-ip_right = "http://192.168.43.22/?action=stream"
+# ip_left = "http://192.168.43.190/?action=stream"
+# ip_right = "http://192.168.43.22/?action=stream"
+ip_left = "http://192.168.43.1:8080/video"
+ip_right = "http://192.168.43.41:8080/video"
 cap_left = VideoCapture(ip_left)
 cap_right = VideoCapture(ip_right)
 # cap_right = cap_left
@@ -288,18 +276,18 @@ while True:
     displayTimeDelay(image_np_right, start_time)
     coords_right = getMiddleCoordinates(image_np_right, output_dict_right, width, height)
 
+    distance = None
     if coords_left and coords_right:
       distance = distance_calculation(coords_left[0], coords_right[0])
       print(f"distance: {distance}")
-      fps = 1 / (time.time() - start_time)
-      speed = speed_calculation(fps, distance)
-      print(f"speed: {speed}")
+    
+    fps = 1 / (time.time() - start_time)
+    speed = speed_calculation(fps, distance)
+    print(f"speed: {speed}")
 
     # Display output
     results = np.concatenate((image_np_left, image_np_right), axis=1)
     cv2.imshow('object detection', results)
-
-    
     
     # avg_delay, acc = getAvgTimeDelay(start_time, avg_delay, acc)
     # print(avg_delay)

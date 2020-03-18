@@ -30,38 +30,39 @@ class Drive:
 
 
   def accelerate(self, detection_fps, curr_distance=None):
-    detection_fps = detection_fps / (frames_to_skip + 1)
+    detection_fps = detection_fps / (self.frames_to_skip + 1)
     output_speed = 0
 
-    if not curr_distance and not prev_distance:
+    if not curr_distance and not self.prev_distance:
       # ensure that there's no object detected for waiting_time secs before returning max_speed
-      if elapsed_waiting_time >= waiting_time:  
-        elapsed_waiting_time = 0
-        print("gotta blast")
-        output_speed = max_speed
+      if self.elapsed_waiting_time >= self.waiting_time:
+        self.elapsed_waiting_time = 0
+        print("GOTTA BLAST")
+        output_speed = self.max_speed
       else:
-        elapsed_waiting_time += 1 / detection_fps
-        output_speed = prev_true_speed
+        self.elapsed_waiting_time += 1 / detection_fps
+        print(f"elapsed waiting time: {self.elapsed_waiting_time}")
+        output_speed = self.prev_true_speed
 
-    elif not curr_distance or not prev_distance:
-      output_speed = prev_true_speed
+    elif not curr_distance or not self.prev_distance:
+      output_speed = self.prev_true_speed
 
     else:
       # current relative speed should be positive if car is approaching the object
-      curr_relative_speed = detection_fps * (prev_distance - curr_distance)
+      curr_relative_speed = detection_fps * (self.prev_distance - curr_distance)
       # considering the transmission delay to reevaluate the current distance of object
-      true_curr_distance = curr_distance - (curr_relative_speed * transmission_delay)
+      true_curr_distance = curr_distance - (curr_relative_speed * self.transmission_delay)
 
-      if true_curr_distance <= stop_dist:
+      if true_curr_distance <= self.stop_dist:
         if curr_relative_speed >= 0:
           print("slowing down")
-          output_speed = prev_true_speed-curr_relative_speed
+          output_speed = self.prev_true_speed-curr_relative_speed
         else:
-          output_speed = prev_true_speed
+          output_speed = self.prev_true_speed
 
       else:
-        print("gotta blast")
-        output_speed = max_speed
+        print("MAX!")
+        output_speed = self.max_speed
     
     # make sure that output speed is always 0 or positive
     output_speed = max(0, output_speed)
