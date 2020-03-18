@@ -1,67 +1,73 @@
-# fixed variables
-transmission_delay = 0.02 #s
-analog_input = [0,1024]
+class Drive:
+  transmission_delay = 0.02 #s; video transmission delay from rpi to server/PC
+  stop_dist = 1 #m
+  max_speed = 0.83 #m/s
+  frames_to_skip = 0 # set if the user wants to skip frames
+  waiting_time = 1 #s; how long system should wait to make sure that no object is in front before moving forward 
 
-# set variables
-stop_dist = 0.5 #m
-max_speed = 2.78 #m/s
-max_acceleration = max_speed # 1 sec from 0 to max speed and vice versa
-frames_to_skip = 0
+  #temp stored variables
+  prev_distance = None
+  prev_true_speed = 0
+  elapsed_waiting_time = 0
 
-#output values by system
-detection_fps = 10 #fps # = 1 / lag
-detection_fps = detection_fps / (frames_to_skip + 1)
-curr_distance
+  def __init__(
+      self,
+      transmission_delay=0.02,
+      stop_dist=1,
+      max_speed=0.83,
+      frames_to_skip=0
+      waiting_time=1):
+    if type(transmission_delay) in (int,float):
+      self.transmission_delay = float(transmission_delay)
+    if type(stop_dist) in (int,float):
+      self.stop_dist = float(stop_dist)
+    if type(max_speed) in (int,float):
+      self.max_speed = float(max_speed)
+    if type(frames_to_skip) in (int,float):
+      self.frames_to_skip = int(frames_to_skip)
+    if type(waiting_time) in (int,float):
+      self.waiting_time = float(waiting_time)
 
-#temp stored variables
-prev_distance
-prev_true_speed
-prev_acceleration
 
-#calculated variables
-curr_relative_speed
-curr_true_speed # always 0 or positive
-true_curr_distance # approximate true distance of object when video transmission delay is considered 
-acceleration
+  def accelerate(self, detection_fps, curr_distance=None):
+    detection_fps = detection_fps / (frames_to_skip + 1)
+    output_speed = 0
 
-def applyPrevAcceleration():
-  return self.prev_true_speed + (self.prev_acceleration / self.detection_fps)
+    if not curr_distance and not prev_distance:
+      # ensure that there's no object detected for waiting_time secs before returning max_speed
+      if elapsed_waiting_time >= waiting_time:  
+        elapsed_waiting_time = 0
+        print("gotta blast")
+        output_speed = max_speed
+      else:
+        elapsed_waiting_time += 1 / detection_fps
+        output_speed = prev_true_speed
 
-if curr_distance and not prev_distance:
-  if curr_distance <= stop_dist:
-    stop()
-  else:
-    curr_true_speed = applyPrevAcceleration()
+    elif not curr_distance or not prev_distance:
+      output_speed = prev_true_speed
 
-elif prev_distance and not curr_distance:
-  curr_true_speed = applyPrevAcceleration()
-
-elif not curr_distance and not prev_distance:
-	if prev_acceleration == 0:
-		curr_true_speed = max_speed
-	else:
-		curr_true_speed = applyPrevAcceleration()
-
-else:
-  curr_relative_speed = detection_fps * (prev_distance - curr_distance) # positive if car is approaching the object
-  true_curr_distance = curr_distance - (curr_relative_speed * transmission_delay)
-
-	if true_curr_distance <= stop_dist:
-    if curr_relative_speed < 0:
-      curr_true_speed = prev_true_speed
     else:
-      curr_true_speed = prev_true_speed + curr_relative_speed # result is <= prev_true_speed
+      # current relative speed should be positive if car is approaching the object
+      curr_relative_speed = detection_fps * (prev_distance - curr_distance)
+      # considering the transmission delay to reevaluate the current distance of object
+      true_curr_distance = curr_distance - (curr_relative_speed * transmission_delay)
 
-	elif curr_relative_speed <= 0: # check if object is getting far
-    curr_true_speed = min(prev_true_speed-curr_relative_speed, max_speed)
+      if true_curr_distance <= stop_dist:
+        if curr_relative_speed >= 0:
+          print("slowing down")
+          output_speed = prev_true_speed-curr_relative_speed
+        else:
+          output_speed = prev_true_speed
 
-  elif curr_relative_speed > 0: # if object is getting near
-    curr_true_speed = min(prev_true_speed-curr_relative_speed, max_speed)
-  
-  curr_true_speed = max(0, curr_true_speed) # making sure that there's no negative speed
+      else:
+        print("gotta blast")
+        output_speed = max_speed
+    
+    # make sure that output speed is always 0 or positive
+    output_speed = max(0, output_speed)
 
-prev_distance = curr_distance
-prev_acceleration = (curr_true_speed - prev_true_speed) * detection_fps
-prev_true_speed = curr_true_speed
+    # storing values for next loop
+    self.prev_distance = curr_distance
+    self.prev_true_speed = output_speed
 
-return curr_true_speed
+    return output_speed
