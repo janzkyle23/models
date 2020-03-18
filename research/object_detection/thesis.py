@@ -23,6 +23,7 @@ from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
 import triangulate
+import decision_making
 
 
 # patch tf1 into `utils.ops`
@@ -233,6 +234,19 @@ def distance_calculation(left_coordinate, right_coordinate):
 
   return D
 
+# initializing rc car control
+transmission_delay=0.02
+stop_dist=1
+max_speed=0.83
+frames_to_skip=0
+waiting_time=1
+driver = decision_making.Drive(transmission_delay,stop_dist,max_speed,frames_to_skip,waiting_time)
+
+def speed_calculation(fps, distance):
+  speed = driver.accelerate(fps, distance)
+  return speed
+
+
 def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
   # elapsed time is in ms
   elapsed_time = (time.time() - start_time) * 1000
@@ -277,11 +291,16 @@ while True:
     if coords_left and coords_right:
       distance = distance_calculation(coords_left[0], coords_right[0])
       print(f"distance: {distance}")
+      fps = 1 / (time.time() - start_time)
+      speed = speed_calculation(fps, distance)
+      print(f"speed: {speed}")
 
     # Display output
     results = np.concatenate((image_np_left, image_np_right), axis=1)
     cv2.imshow('object detection', results)
 
+    
+    
     # avg_delay, acc = getAvgTimeDelay(start_time, avg_delay, acc)
     # print(avg_delay)
 

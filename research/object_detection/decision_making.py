@@ -15,7 +15,7 @@ class Drive:
       transmission_delay=0.02,
       stop_dist=1,
       max_speed=0.83,
-      frames_to_skip=0
+      frames_to_skip=0,
       waiting_time=1):
     if type(transmission_delay) in (int,float):
       self.transmission_delay = float(transmission_delay)
