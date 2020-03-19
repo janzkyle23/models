@@ -206,12 +206,10 @@ def getMiddleCoordinates(image, output_dict, width, height, min_score_thresh=.5,
 # distance calculation parameters initialization
 width = 640
 height = 480
-# angle_width=62.2 # rpi cam
-angle_width=66 # kyle
+angle_width=62.2
 angler = triangulate.Frame_Angles(width,height,angle_width)
 angler.build_frame()
-# camera_distance = 0.15 # rpi cam
-camera_distance = 0.16 #kyle
+camera_distance = 0.15
 
 # calculate distance from phone to detected object
 def distance_calculation(left_coordinate, right_coordinate):
@@ -226,7 +224,7 @@ def distance_calculation(left_coordinate, right_coordinate):
 # initializing rc car control
 transmission_delay=0.02
 slow_dist=1
-brake_dist=0.5
+brake_dist=0.6
 max_speed=0.83
 frames_to_skip=0
 waiting_time=1
@@ -257,10 +255,10 @@ def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
 
 
 # ip_left = 0  # Use this only if you have one webcam for testing
-# ip_left = "http://192.168.43.190/?action=stream"
-# ip_right = "http://192.168.43.22/?action=stream"
-ip_left = "http://192.168.43.1:8080/video"
-ip_right = "http://192.168.43.41:8080/video"
+ip_left = "http://192.168.43.190/?action=stream"
+ip_right = "http://192.168.43.22/?action=stream"
+# ip_left = "http://192.168.43.1:8080/video"
+# ip_right = "http://192.168.43.41:8080/video"
 cap_left = VideoCapture(ip_left)
 cap_right = VideoCapture(ip_right)
 # cap_right = cap_left
