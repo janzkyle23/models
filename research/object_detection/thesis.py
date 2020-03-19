@@ -24,6 +24,7 @@ from object_detection.utils import visualization_utils as vis_util
 
 import triangulate
 import decision_making
+import socket_client
 
 
 # patch tf1 into `utils.ops`
@@ -149,22 +150,22 @@ class VideoCapture:
 
 # cv2 display preferences
 font = cv2.FONT_HERSHEY_SIMPLEX
-red = (0,0,255)
-bottomLeftCornerOfText = (10, 100)
+fpsPosition = (10, 100)
 fontScale = 0.5
 fontColor = (255, 255, 255)
 lineType = 2
 
-def displayTimeDelay(image, start_time):
-  elapsed_time = time.time() - start_time
-  info = "time: %.2f ms" % (1000*elapsed_time)
+def displayFps(image, start_time):
+  fps = 1 / (time.time() - start_time)
+  info = f"{fps} fps"
   
   cv2.putText(image, info,
-              bottomLeftCornerOfText,
+              fpsPosition,
               font,
               fontScale,
               fontColor,
               lineType)
+  return fps
 
 def getMiddleCoordinates(image, output_dict, width, height, min_score_thresh=.5, display=True):
   boxes = output_dict['detection_boxes']
@@ -195,7 +196,7 @@ def getMiddleCoordinates(image, output_dict, width, height, min_score_thresh=.5,
                   midCoordinate, 
                   font, 
                   fontScale,
-                  red,
+                  (0,0,255),
                   lineType)
       TextYCoordinate += 50
 
@@ -224,16 +225,27 @@ def distance_calculation(left_coordinate, right_coordinate):
 
 # initializing rc car control
 transmission_delay=0.02
-stop_dist=0.5
+slow_dist=1
+brake_dist=0.5
 max_speed=0.83
 frames_to_skip=0
 waiting_time=1
-driver = decision_making.Drive(transmission_delay,stop_dist,max_speed,frames_to_skip,waiting_time)
+driver = decision_making.Drive(
+    transmission_delay=transmission_delay,
+    slow_dist=slow_dist,
+    brake_dist=brake_dist,
+    max_speed=max_speed,
+    frames_to_skip=frames_to_skip,
+    waiting_time=waiting_time)
 
 def speed_calculation(fps, distance):
   speed = driver.accelerate(fps, distance)
   return speed
 
+# initializing socket client
+host = '127.0.0.1'
+port = 9999
+socket = socket_client.Socket(host,port)
 
 def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
   # elapsed time is in ms
@@ -268,12 +280,11 @@ while True:
 
     image_np_left, output_dict_left = show_inference(detection_model, np.array(image_np_left))
     image_np_left = cv2.resize(image_np_left, (width, height))
-    displayTimeDelay(image_np_left, start_time)
     coords_left = getMiddleCoordinates(image_np_left, output_dict_left, width, height)
 
     image_np_right, output_dict_right = show_inference(detection_model, np.array(image_np_right))
     image_np_right = cv2.resize(image_np_right, (width, height))
-    displayTimeDelay(image_np_right, start_time)
+    fps = displayFps(image_np_right, start_time)
     coords_right = getMiddleCoordinates(image_np_right, output_dict_right, width, height)
 
     distance = None
@@ -281,9 +292,11 @@ while True:
       distance = distance_calculation(coords_left[0], coords_right[0])
       print(f"distance: {distance}")
     
-    fps = 1 / (time.time() - start_time)
     speed = speed_calculation(fps, distance)
     print(f"speed: {speed}")
+
+    # send speed to socket server
+    socket.send(speed)
 
     # Display output
     results = np.concatenate((image_np_left, image_np_right), axis=1)
@@ -294,4 +307,5 @@ while True:
 
     if cv2.waitKey(25) & 0xFF == ord('q'):
         cv2.destroyAllWindows()
+        socket.close()
         break

@@ -1,6 +1,7 @@
 class Drive:
   transmission_delay = 0.02 #s; video transmission delay from rpi to server/PC
-  stop_dist = 1 #m
+  slow_dist = 1 #m
+  brake_dist = slow_dist/2
   max_speed = 0.83 #m/s
   frames_to_skip = 0 # set if the user wants to skip frames
   waiting_time = 1 #s; how long system should wait to make sure that no object is in front before moving forward 
@@ -13,14 +14,17 @@ class Drive:
   def __init__(
       self,
       transmission_delay=0.02,
-      stop_dist=1,
+      slow_dist=1,
+      brake_dist=0.5,
       max_speed=0.83,
       frames_to_skip=0,
       waiting_time=1):
     if type(transmission_delay) in (int,float):
       self.transmission_delay = float(transmission_delay)
-    if type(stop_dist) in (int,float):
-      self.stop_dist = float(stop_dist)
+    if type(slow_dist) in (int,float):
+      self.slow_dist = float(slow_dist)
+    if type(brake_dist) in (int,float):
+      self.brake_dist = float(brake_dist)
     if type(max_speed) in (int,float):
       self.max_speed = float(max_speed)
     if type(frames_to_skip) in (int,float):
@@ -53,7 +57,11 @@ class Drive:
       # considering the transmission delay to reevaluate the current distance of object
       true_curr_distance = curr_distance - (curr_relative_speed * self.transmission_delay)
 
-      if true_curr_distance <= self.stop_dist:
+      if true_curr_distance <= self.brake_dist:
+        print("STOP")
+        output_speed = 0
+
+      elif true_curr_distance <= self.slow_dist:
         if curr_relative_speed >= 0:
           print("slowing down")
           output_speed = self.prev_true_speed-curr_relative_speed

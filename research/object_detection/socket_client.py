@@ -1,23 +1,25 @@
 import socket
 import time
 
-# create a socket object
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class Socket:
+    def __init__(self,host='127.0.0.1',port=9999):
+        # create a socket object
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# get local machine name
-host = '192.168.0.105'
+        host = '127.0.0.1'
+        port = 9999
 
-port = 9999
+        # connection to hostname on the port.
+        self.s.connect((host, port))
+        print(f"connected to {host}:{port}")
+        # initialize ESC of RC car
+        msg = "init"
+        self.s.send(msg.encode('ascii'))
 
-# connection to hostname on the port.
-s.connect((host, port))
+    def send(self, speed):
+        msg = str(speed)
+        self.s.send(msg.encode('ascii'))
+        print(f"sent: {msg}")
 
-while True:
-    time.sleep(1)
-    msg = "Hello\r\n"                           
-    s.send(msg.encode('ascii'))
-    # Receive no more than 1024 bytes
-    msg = s.recv(1024)                                     
-
-s.close()
-print (msg.decode('ascii'))
+    def close(self):
+        self.s.close()
