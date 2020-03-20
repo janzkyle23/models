@@ -241,7 +241,7 @@ def speed_calculation(fps, distance):
   return speed
 
 # initializing socket client
-host = '127.0.0.1'
+host = '192.168.31.207' 
 port = 9999
 socket = socket_client.Socket(host,port)
 
@@ -255,8 +255,8 @@ def getAvgTimeDelay(start_time, avg_delay=0, acc=0):
 
 
 # ip_left = 0  # Use this only if you have one webcam for testing
-ip_left = "http://192.168.43.190/?action=stream"
-ip_right = "http://192.168.43.22/?action=stream"
+ip_left = "http://192.168.31.167/?action=stream"
+ip_right = "http://192.168.31.207/?action=stream"
 # ip_left = "http://192.168.43.1:8080/video"
 # ip_right = "http://192.168.43.41:8080/video"
 cap_left = VideoCapture(ip_left)
