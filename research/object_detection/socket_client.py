@@ -16,7 +16,8 @@ class Socket:
         time.sleep(3)
 
     def send(self, speed):
-        msg = str(speed)
+        msg = "%0.2f" % speed
+        print(msg)
         self.s.send(msg.encode('ascii'))
         print(f"sent: {msg}")
         time.sleep(0.0001)
