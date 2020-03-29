@@ -55,6 +55,7 @@ def load_model(model_name):
 
   model_dir = pathlib.Path(model_dir)/"saved_model"
 
+  # model_dir = os.path.join('data', 'bottle_chair')
   model = tf.saved_model.load(str(model_dir))
   model = model.signatures['serving_default']
 
@@ -62,6 +63,7 @@ def load_model(model_name):
 
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = os.path.join('data', 'mscoco_label_map.pbtxt')
+# PATH_TO_LABELS = os.path.join('data', 'bottle_chair_label_map.pbtxt')
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
 def run_inference_for_single_image(model, image, filter_person=True):
@@ -80,7 +82,7 @@ def run_inference_for_single_image(model, image, filter_person=True):
   num_detections = int(output_dict.pop('num_detections'))
   # output_dict = {key:value[0, :num_detections].numpy() 
   #                for key,value in output_dict.items()}
-  indices = np.where(output_dict['detection_classes'][0, :num_detections].numpy() == 1)
+  indices = np.where(output_dict['detection_classes'][0, :num_detections].numpy() == 44)
 
   for key,value in output_dict.items():
     value_np = value[0, :num_detections].numpy()

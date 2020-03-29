@@ -10,9 +10,10 @@ class Socket:
         self.s.connect((host, port))
         print(f"connected to {host}:{port}")
         # initialize ESC of RC car
+        time.sleep(1)
         msg = "init"
         self.s.send(msg.encode('ascii'))
-        time.sleep(2)
+        time.sleep(3)
 
     def send(self, speed):
         msg = str(speed)
